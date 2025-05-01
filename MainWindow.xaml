@@ -3,12 +3,31 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:PomodoroTrayApp" 
+        xmlns:local="clr-namespace:PomodoroTrayApp"
         d:DataContext="{d:DesignInstance Type=local:MainWindowViewModel}"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    
+        Title="PomoTimer" 
+        MinHeight="225" MinWidth="350"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        Style="{StaticResource MaterialDesignWindow}">
+
     <Grid>
-        <TextBlock Text="{Binding DisplayTime}" FontSize="44" HorizontalAlignment="Center" VerticalAlignment="Center" d:Text="22"/>
+        <materialDesign:Card Padding="32" Margin="16">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Orientation="Vertical">
+                <TextBlock Text="Set Timer Duration (Minutes):" Style="{StaticResource MaterialDesignSubtitle1TextBlock}" HorizontalAlignment="Center" Margin="0 0 0 20"/>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}" Command="{Binding DecrementMinutesCommand}" ToolTip="Decrease Minutes" Margin="0 0 20 0" VerticalAlignment="Center">
+                        <materialDesign:PackIcon Kind="Minus"/>
+                    </Button>
+
+                    <TextBlock Text="{Binding CurrentDurationString, Mode=OneWay}" materialDesign:HintAssist.Hint="Mins" Style="{StaticResource MaterialDesignButtonTextBlock}" VerticalAlignment="Center" />
+
+                    <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}" Command="{Binding IncrementMinutesCommand}" ToolTip="Increase Minutes" Margin="20 0 0 0" VerticalAlignment="Center">
+                        <materialDesign:PackIcon Kind="Plus"/>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </materialDesign:Card>
     </Grid>
 </Window>
