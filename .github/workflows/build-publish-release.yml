@@ -1,31 +1,30 @@
-name: Build & Publish
+name: Build, Publish, & Create Release
 
-# 1) Trigger on pushes to main
 on:
   push:
     branches:
       - main
 
+permissions:
+  contents: write # Allow creating releases and uploading asset
+  
 jobs:
   publish:
-    # 2) Use Windows runner for WPF projects
-    runs-on: windows-latest
+    runs-on: windows-latest # Use Windows runner for WPF projects
     strategy:
       matrix:
         dotnet-version: [8.0.x]
 
     steps:
-      # 3) Checkout your code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 4) Setup .NET
       - name: Setup .NET ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
 
-      # 5) Cache NuGet packages (optional but speeds up builds)
+      # Cache NuGet packages (optional but speeds up builds)
       - name: Cache NuGet packages
         uses: actions/cache@v3
         with:
@@ -34,22 +33,27 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
-      # 6) Restore dependencies
       - name: dotnet restore
         run: dotnet restore ./PomodoroTrayApp.sln
 
-      # # 7) Run tests (if any)
+      # Run tests (if any)
       # - name: dotnet test
       #   run: dotnet test ./YourSolution.sln --no-restore --verbosity normal
 
-      # 8) Publish the WPF app
       - name: dotnet publish (Release)
         run: dotnet publish PomodoroTrayApp.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o publish
 
-
-      # 9) (Optional) Upload artifacts for inspection
-      - name: Upload publish artifact
-        uses: actions/upload-artifact@v4
+      # Create GitHub Release and Upload Assets
+      # This step runs only if the previous steps were successful.
+      - name: Create Release and Upload Artifacts
+        uses: softprops/action-gh-release@v2
         with:
-          name: wpf-publish
-          path: ./publish
+          # Define the tag name for the release. Using run_id for uniqueness.
+          tag_name: release-${{ github.run_id }}
+          # Define the name of the release visible on GitHub.
+          name: Release ${{ github.run_id }}
+          prerelease: false
+          draft: false
+          files: ./publish/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
