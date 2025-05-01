@@ -1,0 +1,55 @@
+name: Build & Publish
+
+# 1) Trigger on pushes to main
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  publish:
+    # 2) Use Windows runner for WPF projects
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        dotnet-version: [8.0.x]
+
+    steps:
+      # 3) Checkout your code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 4) Setup .NET
+      - name: Setup .NET ${{ matrix.dotnet-version }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+
+      # 5) Cache NuGet packages (optional but speeds up builds)
+      - name: Cache NuGet packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      # 6) Restore dependencies
+      - name: dotnet restore
+        run: dotnet restore ./PomodoroTrayApp.sln
+
+      # # 7) Run tests (if any)
+      # - name: dotnet test
+      #   run: dotnet test ./YourSolution.sln --no-restore --verbosity normal
+
+      # 8) Publish the WPF app
+      - name: dotnet publish (Release)
+        run: dotnet publish PomodoroTrayApp.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o publish
+
+
+      # 9) (Optional) Upload artifacts for inspection
+      - name: Upload publish artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wpf-publish
+          path: ./publish
