@@ -25,8 +25,8 @@ public partial class App : Application
         if (_appHost == null)
             return;
 
-        double windowWidth = 450;
-        double windowHeight = 250;
+        double windowWidth = 350;
+        double windowHeight = 225;
 
         await _appHost.StartAsync();
         var mainWindow = _appHost.Services.GetRequiredService<MainWindow>();
@@ -34,7 +34,7 @@ public partial class App : Application
         mainWindow.Width = windowWidth;
         mainWindow.Height = windowHeight;
         Current.MainWindow = mainWindow;
+        Current.MainWindow.WindowState = WindowState.Minimized;
         Current.MainWindow.Show();
-        //Current.MainWindow.Hide();
     }
 }
