@@ -1,11 +1,18 @@
 ﻿namespace PomodoroTrayApp.Services;
 
-public interface ITimerService
+public enum TimerState
 {
-    /// <summary> Fires every second </summary>
+    Stopped,
+    Running,
+    Finished
+    // Paused
+}
+
+public interface ITimerService :  IDisposable
+{
+    event EventHandler<TimerState> StateChanged;
     event EventHandler<TimeSpan> Tick;
-    /// <summary> Fires when interval elapses </summary>
-    event EventHandler SessionCompleted;
+    TimerState CurrentState { get; }
     void Start(TimeSpan interval);
     void Stop();
 }
