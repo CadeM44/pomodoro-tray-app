@@ -120,7 +120,7 @@ public class MainWindowViewModel : INotifyPropertyChanged
         (StartCommand as RelayCommand)?.NotifyCanExecuteChanged();
     }
 
-    protected bool SetProperty<T>(ref T field, T newValue, [CallerMemberName] string propertyName = null)
+    protected bool SetProperty<T>(ref T field, T newValue, [CallerMemberName] string? propertyName = null)
     {
         if (!Equals(field, newValue))
         {
