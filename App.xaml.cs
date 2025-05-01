@@ -34,6 +34,7 @@ public partial class App : Application
         mainWindow.Width = windowWidth;
         mainWindow.Height = windowHeight;
         Current.MainWindow = mainWindow;
+        Current.MainWindow.ShowInTaskbar = false;
         Current.MainWindow.WindowState = WindowState.Minimized;
         Current.MainWindow.Show();
     }
