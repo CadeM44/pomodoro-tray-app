@@ -44,7 +44,6 @@ public partial class App : Application
 
         try
         {
-            Func<MainWindow> windowFactory = () => _appHost.Services.GetRequiredService<MainWindow>();
             Uri iconUri = new("pack://application:,,,Assets/timer-icon.png", UriKind.RelativeOrAbsolute);
             _trayIconAndMenu.IconSource = new BitmapImage(iconUri);
         }

@@ -50,7 +50,6 @@ public class AppShellViewModel : INotifyPropertyChanged
     private MainWindow? _currentWindowInstance;
     private TaskbarIcon? _trayIcon;
 
-
     public AppShellViewModel(ITimerService timer, Func<MainWindow> windowFactory)
     {
         CurrentDuration = _configuredDuration;
