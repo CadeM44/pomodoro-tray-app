@@ -36,7 +36,7 @@
                         <MenuItem Header="Set Interval" >
                             <MenuItem Header="15 min" Command="{Binding SetIntervalCommand}" CommandParameter="00:15:00" />
                             <MenuItem Header="30 min" Command="{Binding SetIntervalCommand}" CommandParameter="00:30:00" />
-                            <MenuItem Header="60 min" Command="{Binding SetIntervalCommand}" CommandParameter="00:60:00" />
+                            <MenuItem Header="60 min" Command="{Binding SetIntervalCommand}" CommandParameter="01:00:00" />
                         </MenuItem>
 
                         <MenuItem Header="Show Window" Command="{Binding ShowWindowCommand}" >
