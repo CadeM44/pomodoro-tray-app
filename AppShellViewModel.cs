@@ -8,12 +8,15 @@ using System.Windows.Input;
 
 namespace PomodoroTrayApp;
 
-public class MainWindowViewModel : INotifyPropertyChanged
+public class AppShellViewModel : INotifyPropertyChanged
 {
+    private const double WINDOW_WIDTH = 350;
+    private const double WINDOW_HEIGHT = 225;
+
     public event PropertyChangedEventHandler? PropertyChanged;
     protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
-    private TimeSpan _currentDuration = TimeSpan.FromMinutes(TimerService.DEFAULT_DURATION_MINS);
+    private TimeSpan _currentDuration;
     /// <summary> Represents the configured duration when stopped/finished, or the remaining time when running. </summary>
     public TimeSpan CurrentDuration
     {
@@ -41,23 +44,30 @@ public class MainWindowViewModel : INotifyPropertyChanged
     public ICommand IncrementMinutesCommand { get; }
     public ICommand SetIntervalCommand { get; }
 
+    private TimeSpan _configuredDuration = TimeSpan.FromMinutes(TimerService.DEFAULT_DURATION_MINS);
     private readonly ITimerService _timerService;
+    private readonly Func<MainWindow> _mainWindowFactory;
+    private MainWindow? _currentWindowInstance;
     private TaskbarIcon? _trayIcon;
 
-    public MainWindowViewModel(ITimerService timer)
+
+    public AppShellViewModel(ITimerService timer, Func<MainWindow> windowFactory)
     {
+        CurrentDuration = _configuredDuration;
         _timerService = timer;
-        StartCommand = new RelayCommand(() => _timerService.Start(CurrentDuration));
+        _mainWindowFactory = windowFactory;
+
+        StartCommand = new RelayCommand(StartTimer);
         StopCommand = new RelayCommand(() => _timerService.Stop());
 
         DecrementMinutesCommand = new RelayCommand(
             execute: () => SetDuration(TimeSpan.FromMinutes(CurrentDuration.TotalMinutes - 1)),
-            canExecute: () => _timerService.CurrentState != TimerState.Running
+            canExecute: () => !IsRunning
             );
 
         IncrementMinutesCommand = new RelayCommand(
              execute: () => SetDuration(TimeSpan.FromMinutes(CurrentDuration.TotalMinutes + 1)),
-             canExecute: () => _timerService.CurrentState != TimerState.Running
+             canExecute: () => !IsRunning
             );
 
         SetIntervalCommand = new RelayCommand<string>(
@@ -66,23 +76,54 @@ public class MainWindowViewModel : INotifyPropertyChanged
                 if (TimeSpan.TryParse(param, out TimeSpan parsedDuration))
                     SetDuration(parsedDuration);
             },
-            canExecute: (param) => _timerService.CurrentState != TimerState.Running
+            canExecute: (param) => !IsRunning
             );
 
-        ShowWindowCommand = new RelayCommand(() => Application.Current.MainWindow?.Show());
+        ShowWindowCommand = new RelayCommand(ShowWindow);
         ExitCommand = new RelayCommand(() => Application.Current.Shutdown());
 
         _timerService.StateChanged += _timerService_StateChanged;
         _timerService.Tick += _timerService_Tick;
     }
 
-    public void Loaded()
+    public void SetTrayIcon(TaskbarIcon trayIcon)
     {
-        _trayIcon = Application.Current.TryFindResource("TrayIcon") as TaskbarIcon;
-        if (_trayIcon != null)
+        _trayIcon ??= trayIcon; // assigns arg to _trayIcon only if _trayIcon is currently null
+    }
+
+    private void StartTimer()
+    {
+        _configuredDuration = CurrentDuration;
+        _timerService.Start(CurrentDuration);
+    }
+
+    private void ShowWindow()
+    {
+        if (_currentWindowInstance != null && _currentWindowInstance.IsLoaded)
         {
-            _trayIcon.Visibility = Visibility.Visible;
-            _trayIcon.DataContext = this;
+            if (_currentWindowInstance.WindowState == WindowState.Minimized)
+                _currentWindowInstance.WindowState = WindowState.Normal;
+
+            _currentWindowInstance.Activate();
+        }
+        else
+        {
+            _currentWindowInstance = _mainWindowFactory();
+            _currentWindowInstance.DataContext = this;
+            _currentWindowInstance.Closed += MainWindow_Closed;
+            _currentWindowInstance.Height = WINDOW_HEIGHT;
+            _currentWindowInstance.Width = WINDOW_WIDTH;
+            _currentWindowInstance.Show();
+            _currentWindowInstance.Activate();
+        }
+    }
+
+    private void MainWindow_Closed(object? sender, EventArgs e)
+    {
+        if (sender is MainWindow window)
+        {
+            window.Closed -= MainWindow_Closed;
+            _currentWindowInstance = null;
         }
     }
 
@@ -93,30 +134,29 @@ public class MainWindowViewModel : INotifyPropertyChanged
 
     private void _timerService_StateChanged(object? sender, TimerState newState)
     {
-        if (newState == TimerState.Stopped || newState == TimerState.Finished)
+        if (newState == TimerState.Finished)
         {
-            int intendedMinutes = (int)Math.Max(1, Math.Round(CurrentDuration.TotalMinutes));
-            if (newState == TimerState.Finished)
-            {
-                CurrentDuration = TimeSpan.FromMinutes(intendedMinutes);
-                _trayIcon?.ShowBalloonTip("Pomodoro Complete!", $"Finished a session. Time for a break!", BalloonIcon.Info);
-            }
+            CurrentDuration = _configuredDuration;
+            _trayIcon?.ShowBalloonTip("Pomodoro Complete!", $"Finished a session. Time for a break!", BalloonIcon.Info);
         }
 
         (StartCommand as RelayCommand)?.NotifyCanExecuteChanged();
         (StopCommand as RelayCommand)?.NotifyCanExecuteChanged();
         (IncrementMinutesCommand as RelayCommand)?.NotifyCanExecuteChanged();
         (DecrementMinutesCommand as RelayCommand)?.NotifyCanExecuteChanged();
+        (SetIntervalCommand as RelayCommand<string>)?.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(IsRunning));
     }
 
     private void SetDuration(TimeSpan newDuration)
     {
-        if (_timerService.CurrentState == TimerState.Running)
+        if (IsRunning)
             return;
 
         double totalMinutes = Math.Clamp(newDuration.TotalMinutes, 1, 120);
-        CurrentDuration = TimeSpan.FromMinutes(totalMinutes);
+        var duration = TimeSpan.FromMinutes(totalMinutes);
+        CurrentDuration = duration;
+        _configuredDuration = duration;
         (StartCommand as RelayCommand)?.NotifyCanExecuteChanged();
     }
 
