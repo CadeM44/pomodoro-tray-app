@@ -79,7 +79,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: release-${{ steps.date_versioning.outputs.version_tag }}
-          name: Release ${{ steps.get_version.version_tag.version }}
+          name: Release ${{ steps.date_versioning.outputs.version_tag }}
           prerelease: false
           draft: false
           files: ./publish/*
